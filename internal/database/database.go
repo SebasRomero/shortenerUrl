@@ -1,4 +1,4 @@
-package dabatase
+package datatase
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sebasromero/shortenerUrl/internal/functionalities"
 	"github.com/sebasromero/shortenerUrl/internal/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,7 +62,18 @@ func (db *DB) CreateShortenerUrl(url string) *types.UrlShortened {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	shortUrl := types.Path + "/randomCode"
+	foundUrl := db.FindLongUrl(url)
+
+	if foundUrl.LongUrl != "" {
+		foo := types.UrlShortened{
+			UrlShortened: foundUrl.ShortUrl,
+		}
+		return &foo
+	}
+
+	encode := functionalities.ConvertToBase62(functionalities.COUNTER)
+	functionalities.COUNTER++
+	shortUrl := types.Path + "/" + encode
 
 	_, err := urlShortenerCollection.InsertOne(ctx, bson.M{
 		"shortUrl": shortUrl,
@@ -77,4 +89,19 @@ func (db *DB) CreateShortenerUrl(url string) *types.UrlShortened {
 	}
 
 	return &returnShortUrlResponse
+}
+
+func (db *DB) FindLongUrl(url string) *types.FoundUrlResponse {
+	urlShortenerCollection := db.urlShortenerCollection()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var foundUrl types.FoundUrlResponse
+	filter := bson.D{{"longUrl", url}}
+	err := urlShortenerCollection.FindOne(ctx, filter).Decode(&foundUrl)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return &foundUrl
 }
