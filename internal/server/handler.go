@@ -4,7 +4,8 @@ import "net/http"
 
 func InitRoutes() *http.ServeMux {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /v1/shortener", home)
+	router.HandleFunc("GET /shrt/{url}", getUrlShortened)
+	router.HandleFunc("POST /shrt", createUrlShortened)
 
 	return router
 }
