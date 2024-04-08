@@ -12,10 +12,8 @@ var COUNTER = 100000000
 
 const base62Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-var db = database.Connect()
-
 func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
-	foundUrl := db.FindLongUrl(url)
+	foundUrl := database.Connection.FindLongUrl(url)
 	if foundUrl.LongUrl != "" {
 		returnUrl := types.UrlShortened{
 			UrlShortened: foundUrl.ShortUrl,
@@ -25,9 +23,9 @@ func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
 	}
 
 	encode := ConvertToBase62(COUNTER)
-	foundEncode := db.FindEncode(encode).Encode
+	foundEncode := database.Connection.FindEncode(encode).Encode
 	if foundEncode != "" {
-		lastOne := db.FindLastShortedUrl()
+		lastOne := database.Connection.FindLastShortedUrl()
 		decimal := ConvertToDecimal(lastOne)
 		encode = ConvertToBase62(decimal + 1)
 	} else {
@@ -42,7 +40,7 @@ func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
 		LongUrl:  url,
 	}
 
-	_, err := db.InsertShortenedUrl(insertUrl)
+	_, err := database.Connection.InsertShortenedUrl(insertUrl)
 	if err != nil {
 		return nil, err
 	}

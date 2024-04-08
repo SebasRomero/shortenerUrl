@@ -20,6 +20,8 @@ type DB struct {
 
 var connectionString string = os.Getenv("SRV_MONGO")
 
+var Connection = Connect()
+
 func (db *DB) urlShortenerCollection() *mongo.Collection {
 	return db.client.Database("url-shortener").Collection("urlShortener")
 }
