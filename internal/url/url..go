@@ -1,12 +1,40 @@
-package functionalities
+package url
 
 import (
+	"fmt"
 	"math"
+
+	"github.com/sebasromero/shortenerUrl/internal/database"
+	"github.com/sebasromero/shortenerUrl/internal/types"
 )
 
 var COUNTER = 100000000
 
 const base62Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
+	foundUrl := database.Connect().FindLongUrl(url)
+	if foundUrl.LongUrl != "" {
+		foo := types.UrlShortened{
+			UrlShortened: foundUrl.ShortUrl,
+		}
+		fmt.Println(foo)
+		return &foo, nil
+	}
+
+	encode := ConvertToBase62(COUNTER)
+	COUNTER++
+	shortUrl := types.Path + "/" + encode
+
+	_, err := database.Connect().InsertShortenedUrl(shortUrl, url)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.UrlShortened{
+		UrlShortened: shortUrl,
+	}, nil
+}
 
 func ConvertToBase62(number int) string {
 	base62 := ""

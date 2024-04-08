@@ -1,4 +1,4 @@
-package datatase
+package database
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sebasromero/shortenerUrl/internal/functionalities"
 	"github.com/sebasromero/shortenerUrl/internal/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,53 +41,42 @@ func Connect() *DB {
 	}
 }
 
-func (db *DB) GetUrlShortened(url string) *types.ShortUrlResponse {
+func (db *DB) GetUrlShortened(url string) (*types.ShortUrlResponse, error) {
 	urlShortenerCollection := db.urlShortenerCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var urlShortened types.ShortUrlResponse
-	filter := bson.D{{"shortUrl", url}}
+	filter := bson.D{{Key: "shortUrl", Value: url}}
 
 	err := urlShortenerCollection.FindOne(ctx, filter).Decode(&urlShortened)
 	if err != nil {
 		fmt.Println(err)
+		return nil, err
 	}
-	return &urlShortened
+	return &urlShortened, nil
 }
 
-func (db *DB) CreateShortenerUrl(url string) *types.UrlShortened {
+func (db *DB) InsertShortenedUrl(shortUrl string, longUrl string) (*types.UrlShortened, error) {
 	urlShortenerCollection := db.urlShortenerCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	foundUrl := db.FindLongUrl(url)
-
-	if foundUrl.LongUrl != "" {
-		foo := types.UrlShortened{
-			UrlShortened: foundUrl.ShortUrl,
-		}
-		return &foo
-	}
-
-	encode := functionalities.ConvertToBase62(functionalities.COUNTER)
-	functionalities.COUNTER++
-	shortUrl := types.Path + "/" + encode
-
 	_, err := urlShortenerCollection.InsertOne(ctx, bson.M{
 		"shortUrl": shortUrl,
-		"longUrl":  url,
+		"longUrl":  longUrl,
 		"clicked":  0,
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return nil, err
 	}
 
 	returnShortUrlResponse := types.UrlShortened{
 		UrlShortened: shortUrl,
 	}
 
-	return &returnShortUrlResponse
+	return &returnShortUrlResponse, err
 }
 
 func (db *DB) FindLongUrl(url string) *types.FoundUrlResponse {
@@ -97,7 +85,7 @@ func (db *DB) FindLongUrl(url string) *types.FoundUrlResponse {
 	defer cancel()
 
 	var foundUrl types.FoundUrlResponse
-	filter := bson.D{{"longUrl", url}}
+	filter := bson.D{{Key: "longUrl", Value: url}}
 	err := urlShortenerCollection.FindOne(ctx, filter).Decode(&foundUrl)
 
 	if err != nil {

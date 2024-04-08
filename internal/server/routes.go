@@ -6,6 +6,7 @@ import (
 
 	dabatase "github.com/sebasromero/shortenerUrl/internal/database"
 	"github.com/sebasromero/shortenerUrl/internal/types"
+	"github.com/sebasromero/shortenerUrl/internal/url"
 )
 
 var db = dabatase.Connect()
@@ -16,21 +17,28 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 func getUrlShortened(w http.ResponseWriter, r *http.Request) {
 	customUrl := r.URL.Path
-	url := db.GetUrlShortened(types.Path + customUrl)
-	if url != nil {
+	url, err := db.GetUrlShortened(types.Path + customUrl)
+	if err != nil {
+		http.Redirect(w, r, types.Path, http.StatusSeeOther)
+		return
+	}
+	if url.LongUrl != "" {
 		http.Redirect(w, r, url.LongUrl, http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, types.Path, http.StatusSeeOther)
 }
 
 func createUrlShortened(w http.ResponseWriter, r *http.Request) {
-	url := &types.InputLongUrl{}
-	err := json.NewDecoder(r.Body).Decode(url)
+	longUrl := &types.InputLongUrl{}
+	err := json.NewDecoder(r.Body).Decode(longUrl)
 	if err != nil {
 		w.Write([]byte("Error decoding"))
 		return
 	}
-	response := db.CreateShortenerUrl(url.LongUrl)
+	response, err := url.CreateShortenedUrl(longUrl.LongUrl)
+	if err != nil {
+		w.Write([]byte("Error creating the url"))
+		return
+	}
 	json.NewEncoder(w).Encode(&response)
 }
