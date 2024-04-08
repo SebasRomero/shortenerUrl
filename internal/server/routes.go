@@ -29,7 +29,7 @@ func getUrlShortened(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUrlShortened(w http.ResponseWriter, r *http.Request) {
-	longUrl := &types.InputLongUrl{}
+	longUrl := &types.ShortUrlResponse{}
 	err := json.NewDecoder(r.Body).Decode(longUrl)
 	if err != nil {
 		w.Write([]byte("Error decoding"))
