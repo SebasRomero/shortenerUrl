@@ -3,12 +3,16 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/sebasromero/shortenerUrl/internal/server"
 )
 
 func main() {
-
-	fmt.Println("Listen at: 8080")
-	http.ListenAndServe(":8080", server.InitRoutes())
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Println("Listen at:", port)
+	http.ListenAndServe(":"+port, server.InitRoutes())
 }
