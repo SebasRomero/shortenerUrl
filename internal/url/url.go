@@ -15,11 +15,11 @@ const base62Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV
 func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
 	foundUrl := database.Connect().FindLongUrl(url)
 	if foundUrl.LongUrl != "" {
-		foo := types.UrlShortened{
+		returnUrl := types.UrlShortened{
 			UrlShortened: foundUrl.ShortUrl,
 		}
-		fmt.Println(foo)
-		return &foo, nil
+		fmt.Println(returnUrl)
+		return &returnUrl, nil
 	}
 
 	encode := ConvertToBase62(COUNTER)
