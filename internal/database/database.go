@@ -50,8 +50,9 @@ func (db *DB) GetUrlShortened(url string) (*types.ShortUrlResponse, error) {
 
 	var urlShortened types.ShortUrlResponse
 	filter := bson.D{{Key: "shortUrl", Value: url}}
+	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "clicked", Value: 1}}}}
 
-	err := urlShortenerCollection.FindOne(ctx, filter).Decode(&urlShortened)
+	err := urlShortenerCollection.FindOneAndUpdate(ctx, filter, update).Decode(&urlShortened)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
