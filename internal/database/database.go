@@ -57,15 +57,19 @@ func (db *DB) GetUrlShortened(url string) (*types.ShortUrlResponse, error) {
 	return &urlShortened, nil
 }
 
-func (db *DB) InsertShortenedUrl(shortUrl string, longUrl string) (*types.UrlShortened, error) {
+func (db *DB) InsertShortenedUrl(insertUrl types.InsertUrl) (*types.UrlShortened, error) {
 	urlShortenerCollection := db.urlShortenerCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	now := time.Now()
 	_, err := urlShortenerCollection.InsertOne(ctx, bson.M{
-		"shortUrl": shortUrl,
-		"longUrl":  longUrl,
-		"clicked":  0,
+		"shortUrl":  insertUrl.ShortUrl,
+		"longUrl":   insertUrl.LongUrl,
+		"encode":    insertUrl.Encode,
+		"clicked":   0,
+		"createdAt": now,
+		"updatedAt": now,
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -73,7 +77,7 @@ func (db *DB) InsertShortenedUrl(shortUrl string, longUrl string) (*types.UrlSho
 	}
 
 	returnShortUrlResponse := types.UrlShortened{
-		UrlShortened: shortUrl,
+		UrlShortened: insertUrl.ShortUrl,
 	}
 
 	return &returnShortUrlResponse, err
@@ -92,4 +96,36 @@ func (db *DB) FindLongUrl(url string) *types.FoundUrlResponse {
 		fmt.Println(err)
 	}
 	return &foundUrl
+}
+
+func (db *DB) FindEncode(encode string) *types.FoundEncodeResponse {
+	urlShortenerCollection := db.urlShortenerCollection()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var foundEncode types.FoundEncodeResponse
+	filter := bson.D{{Key: "encode", Value: encode}}
+	err := urlShortenerCollection.FindOne(ctx, filter).Decode(&foundEncode)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	return &foundEncode
+}
+
+func (db *DB) FindLastShortedUrl() string {
+	urlShortenerCollection := db.urlShortenerCollection()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var foundLastOne types.FoundLastOne
+	sort := options.FindOne().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+
+	err := urlShortenerCollection.FindOne(ctx, bson.D{}, sort).Decode(&foundLastOne)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return foundLastOne.Encode
 }
