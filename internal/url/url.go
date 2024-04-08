@@ -13,20 +13,34 @@ var COUNTER = 100000000
 const base62Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
-	foundUrl := database.Connect().FindLongUrl(url)
+	foundUrl := database.Connection.FindLongUrl(url)
 	if foundUrl.LongUrl != "" {
-		foo := types.UrlShortened{
+		returnUrl := types.UrlShortened{
 			UrlShortened: foundUrl.ShortUrl,
 		}
-		fmt.Println(foo)
-		return &foo, nil
+		fmt.Println(returnUrl)
+		return &returnUrl, nil
 	}
 
 	encode := ConvertToBase62(COUNTER)
-	COUNTER++
+	foundEncode := database.Connection.FindEncode(encode).Encode
+	if foundEncode != "" {
+		lastOne := database.Connection.FindLastShortedUrl()
+		decimal := ConvertToDecimal(lastOne)
+		encode = ConvertToBase62(decimal + 1)
+	} else {
+		COUNTER++
+	}
+
 	shortUrl := types.Path + "/" + encode
 
-	_, err := database.Connect().InsertShortenedUrl(shortUrl, url)
+	insertUrl := types.InsertUrl{
+		Encode:   encode,
+		ShortUrl: shortUrl,
+		LongUrl:  url,
+	}
+
+	_, err := database.Connection.InsertShortenedUrl(insertUrl)
 	if err != nil {
 		return nil, err
 	}
