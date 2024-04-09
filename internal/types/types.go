@@ -1,10 +1,10 @@
 package types
 
-type UrlShortened struct {
-	UrlShortened string `json:"urlShortened"`
+type ShortUrlResponse struct {
+	ShortUrl string `json:"shortUrl"`
 }
 
-type ShortUrlResponse struct {
+type LongUrlResponse struct {
 	LongUrl string `json:"longUrl"`
 }
 
