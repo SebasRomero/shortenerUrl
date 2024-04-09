@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sebasromero/shortenerUrl/internal/cache"
 	"github.com/sebasromero/shortenerUrl/internal/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,24 +44,31 @@ func Connect() *DB {
 	}
 }
 
-func (db *DB) GetUrlShortened(url string) (*types.ShortUrlResponse, error) {
+func (db *DB) GetUrlShortened(shortUrl string) (*types.LongUrlResponse, error) {
+	response, bool := cache.GetUrlCache.Get(shortUrl)
+	if bool {
+		return &types.LongUrlResponse{
+			LongUrl: response.LongUrl,
+		}, nil
+	}
 	urlShortenerCollection := db.urlShortenerCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var urlShortened types.ShortUrlResponse
-	filter := bson.D{{Key: "shortUrl", Value: url}}
+	var longUrl types.LongUrlResponse
+	filter := bson.D{{Key: "shortUrl", Value: shortUrl}}
 	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "clicked", Value: 1}}}}
 
-	err := urlShortenerCollection.FindOneAndUpdate(ctx, filter, update).Decode(&urlShortened)
+	err := urlShortenerCollection.FindOneAndUpdate(ctx, filter, update).Decode(&longUrl)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	return &urlShortened, nil
+	cache.GetUrlCache.Set(shortUrl, longUrl, time.Minute)
+	return &longUrl, nil
 }
 
-func (db *DB) InsertShortenedUrl(insertUrl types.InsertUrl) (*types.UrlShortened, error) {
+func (db *DB) InsertShortenedUrl(insertUrl types.InsertUrl) (*types.ShortUrlResponse, error) {
 	urlShortenerCollection := db.urlShortenerCollection()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -79,8 +87,8 @@ func (db *DB) InsertShortenedUrl(insertUrl types.InsertUrl) (*types.UrlShortened
 		return nil, err
 	}
 
-	returnShortUrlResponse := types.UrlShortened{
-		UrlShortened: insertUrl.ShortUrl,
+	returnShortUrlResponse := types.ShortUrlResponse{
+		ShortUrl: insertUrl.ShortUrl,
 	}
 
 	return &returnShortUrlResponse, err

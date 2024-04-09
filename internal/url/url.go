@@ -3,7 +3,9 @@ package url
 import (
 	"fmt"
 	"math"
+	"time"
 
+	"github.com/sebasromero/shortenerUrl/internal/cache"
 	"github.com/sebasromero/shortenerUrl/internal/database"
 	"github.com/sebasromero/shortenerUrl/internal/types"
 )
@@ -12,11 +14,19 @@ var COUNTER = 100000000
 
 const base62Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
+func CreateShortenedUrl(url string) (*types.ShortUrlResponse, error) {
+	cacheResponse, bool := cache.CreateUrlCache.Get(url)
+
+	if bool {
+		return &types.ShortUrlResponse{
+			ShortUrl: cacheResponse.ShortUrl,
+		}, nil
+	}
+
 	foundUrl := database.Connection.FindLongUrl(url)
 	if foundUrl.LongUrl != "" {
-		returnUrl := types.UrlShortened{
-			UrlShortened: foundUrl.ShortUrl,
+		returnUrl := types.ShortUrlResponse{
+			ShortUrl: foundUrl.ShortUrl,
 		}
 		fmt.Println(returnUrl)
 		return &returnUrl, nil
@@ -45,8 +55,10 @@ func CreateShortenedUrl(url string) (*types.UrlShortened, error) {
 		return nil, err
 	}
 
-	return &types.UrlShortened{
-		UrlShortened: shortUrl,
+	cache.CreateUrlCache.Set(url, insertUrl, time.Minute)
+
+	return &types.ShortUrlResponse{
+		ShortUrl: shortUrl,
 	}, nil
 }
 
