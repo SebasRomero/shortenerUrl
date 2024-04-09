@@ -39,6 +39,7 @@ func Connect() *DB {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	return &DB{
 		client: client,
 	}
@@ -74,11 +75,13 @@ func (db *DB) InsertShortenedUrl(insertUrl types.InsertUrl) (*types.ShortUrlResp
 	defer cancel()
 
 	now := time.Now()
+	expires := time.Now().Add(time.Hour)
 	_, err := urlShortenerCollection.InsertOne(ctx, bson.M{
 		"shortUrl":  insertUrl.ShortUrl,
 		"longUrl":   insertUrl.LongUrl,
 		"encode":    insertUrl.Encode,
 		"clicked":   0,
+		"expiresAt": expires,
 		"createdAt": now,
 		"updatedAt": now,
 	})
@@ -139,4 +142,23 @@ func (db *DB) FindLastShortedUrl() string {
 	}
 
 	return foundLastOne.Encode
+}
+
+func (db *DB) RemoveExpiredShortUrls() error {
+	urlShortenerCollection := db.urlShortenerCollection()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var foundUrl types.FoundUrlResponse
+	filter := bson.D{{Key: "expiresAt", Value: bson.D{{Key: "$lte", Value: time.Now()}}}}
+
+	err := urlShortenerCollection.FindOneAndDelete(ctx, filter).Decode(&foundUrl)
+	if err != nil {
+		fmt.Println("Could not remove")
+		return err
+	}
+	cache.CreateUrlCache.Remove(foundUrl.LongUrl)
+	cache.GetUrlCache.Remove(foundUrl.ShortUrl)
+	fmt.Println("Removed")
+	return nil
 }
