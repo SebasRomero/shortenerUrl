@@ -64,7 +64,7 @@ func (db *DB) GetUrlShortened(shortUrl string) (*types.LongUrlResponse, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	cache.GetUrlCache.Set(shortUrl, longUrl, time.Minute)
+	cache.GetUrlCache.Set(shortUrl, longUrl, time.Minute*5)
 	return &longUrl, nil
 }
 

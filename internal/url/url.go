@@ -55,7 +55,7 @@ func CreateShortenedUrl(url string) (*types.ShortUrlResponse, error) {
 		return nil, err
 	}
 
-	cache.CreateUrlCache.Set(url, insertUrl, time.Minute)
+	cache.CreateUrlCache.Set(url, insertUrl, time.Minute*5)
 
 	return &types.ShortUrlResponse{
 		ShortUrl: shortUrl,
