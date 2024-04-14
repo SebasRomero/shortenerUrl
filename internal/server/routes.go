@@ -9,10 +9,6 @@ import (
 	"github.com/sebasromero/shortenerUrl/internal/url"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello world"))
-}
-
 func getUrlShortened(w http.ResponseWriter, r *http.Request) {
 	customUrl := r.URL.Path
 	url, err := database.Connection.GetUrlShortened(types.Path + customUrl)
