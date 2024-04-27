@@ -31,7 +31,7 @@ func NewCache[K comparable, V any]() *Cache[K, V] {
 	}
 
 	go func() {
-		for range time.Tick(5 * time.Second) {
+		for range time.Tick(5 * time.Minute) {
 			cache.mu.Lock()
 			fmt.Println("Checked", cache.items)
 			for key, item := range cache.items {
