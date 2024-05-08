@@ -27,4 +27,4 @@ type InsertUrl struct {
 	Encode   string `json:"encode"`
 }
 
-var Path string = "http://localhost:8080"
+var Path string = "https://shortener-url.fly.dev"
